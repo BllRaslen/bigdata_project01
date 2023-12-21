@@ -1,0 +1,28 @@
+ kafka-consumer-groups.sh --bootstrap-server localhost:9092 --list
+
+
+./bin/spark-shell
+
+./bin/zookeeper-server-start.sh config/zookeeper.properties
+
+./bin/kafka-server-start.sh config/server.properties
+
+kafka-console-producer.sh --topic car_topic --bootstrap-server localhost:9092
+
+kafka-console-consumer.sh --topic car_topic --bootstrap-server localhost:9092 --from-beginning
+
+
+./bin/kafka-topics.sh --create --topic car_topic --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
+
+
+
+python Consumer.py 
+
+python KafkaSparkIntegration.py
+
+spark-submit --master local[*] --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1 SparkML.py
+
+
+spark-submit --master local[*] --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1 Spark_streaming.py 
+
+
