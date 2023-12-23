@@ -1,5 +1,6 @@
- kafka-consumer-groups.sh --bootstrap-server localhost:9092 --list
+./bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --list
 
+./bin/kafka-topics.sh --list --bootstrap-server localhost:9092
 
 ./bin/spark-shell
 
@@ -16,13 +17,12 @@ kafka-console-consumer.sh --topic car_topic --bootstrap-server localhost:9092 --
 
 
 
-python Consumer.py 
+python Consumer.py
 
 python KafkaSparkIntegration.py
 
 spark-submit --master local[*] --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1 SparkML.py
 
 
-spark-submit --master local[*] --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1 Spark_streaming.py 
-
+spark-submit --master local[*] --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1 Spark_streaming.py
 
