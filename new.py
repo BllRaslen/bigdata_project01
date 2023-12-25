@@ -7,16 +7,18 @@ class KafkaStreamReader:
     def __init__(self, bootstrap_servers, group_id, topic):
         self.consumer_config = {
             'bootstrap.servers': bootstrap_servers,
-            'group.id': "console-consumer-15074",
+            'group.id': group_id,
             'auto.offset.reset': 'earliest',
         }
         self.consumer = KafkaConsumer(self.consumer_config)
         self.topic = topic
 
     def subscribe_to_topic(self):
+        # Belirtilen Kafka konusuna abone olun
         self.consumer.subscribe([self.topic])
 
     def read_stream(self, spark, schema):
+        # Boş bir DataFrame oluşturun
         streaming_df = spark.createDataFrame([], schema=schema)
 
         while True:
@@ -31,43 +33,33 @@ class KafkaStreamReader:
                     print(msg.error())
                     break
 
-            # Parse the received message value and append it to the DataFrame
+            # Alınan mesaj değerini ayrıştırın ve DataFrame'e ekleyin
             json_data = msg.value().decode('utf-8')
             data = spark.read.json(spark.sparkContext.parallelize([json_data]), schema=schema)
             streaming_df = streaming_df.union(data)
 
-            # Your further processing logic goes here...
-
-            # For example, you can write the streaming DataFrame to another Kafka topic
-            # streaming_df.selectExpr("to_json(struct(*)) as value").write \
-            #     .format("kafka").option("kafka.bootstrap.servers", "localhost:9092") \
-            #     .option("topic", "processed_traffic_data_topic").save()
-
-            # Or you can write it to a file or any other sink...
-
-            # Print the received message value
-            print('Received message: {}'.format(json_data))
+            print('Alınan mesaj: {}'.format(json_data))
 
 def main():
     bootstrap_servers = 'localhost:9092'
     group_id = 'console-consumer-15074'
     kafka_topic = 'car_topic'
 
-    # Create Spark session
+    # Spark oturumu oluşturun
     spark = SparkSession.builder.appName("KafkaStructuredStreaming").getOrCreate()
 
-    # Define the schema for parsing the JSON messages
+    # JSON mesajlarını ayrıştırmak için şemayı tanımlayın
     schema = StructType().add("Year", IntegerType()).add("Month", IntegerType()) \
         .add("Make", StringType()).add("Model", StringType()) \
         .add("Quantity", IntegerType()).add("Pct", FloatType())
 
-    # Create KafkaStreamReader instance
+    # KafkaStreamReader örneğini oluşturun
     kafka_reader = KafkaStreamReader(bootstrap_servers, group_id, kafka_topic)
 
-    # Subscribe to the Kafka topic
+    # Kafka konusuna abone olun
     kafka_reader.subscribe_to_topic()
 
-    # Read streaming data from Kafka
+    # Kafka'dan akış verisi okuyun
     kafka_reader.read_stream(spark, schema)
 
 if __name__ == "__main__":

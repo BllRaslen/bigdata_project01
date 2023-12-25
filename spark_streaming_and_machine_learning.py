@@ -7,7 +7,7 @@ from pyspark.ml import Pipeline
 
 def create_spark_session():
     """
-    Creates a Spark session with the necessary configurations.
+    Gerekli konfigürasyonlarla bir Spark oturumu oluşturur.
     """
     return (
         SparkSession.builder.appName("KafkaStructuredStreaming")
@@ -17,42 +17,42 @@ def create_spark_session():
 
 def train_ml_model(static_data):
     """
-    Trains a machine learning model using Logistic Regression classifier.
+    Logistic Regression sınıflandırıcısını kullanarak bir makine öğrenimi modeli eğitir.
     """
-    # Add a "label" column to the static data
+    # Statik veriye "label" sütunu ekleyin
     static_data_with_label = static_data.withColumn("label", col("Quantity").cast(IntegerType()))
 
-    # Create a feature vector using VectorAssembler
+    # VectorAssembler kullanarak özellik vektörü oluşturun
     assembler = VectorAssembler(inputCols=["Year", "Month", "Quantity", "Pct"], outputCol="Cfeatures")
     lr = LogisticRegression(featuresCol="Cfeatures", labelCol="label")
 
-    # Create a pipeline for the machine learning model
+    # Makine öğrenimi modeli için bir pipeline oluşturun
     pipeline = Pipeline(stages=[assembler, lr])
-    model = pipeline.fit(static_data_with_label)  # Use the static data with the label
+    model = pipeline.fit(static_data_with_label)  # Etiketli statik veriyi kullanın
 
     return model
 
 def main():
     """
-    Main function for the Spark application.
+    Spark uygulamasının ana fonksiyonu.
     """
-    # Create a Spark session
+    # Spark oturumu oluşturun
     spark = create_spark_session()
 
-    # Kafka configuration
+    # Kafka konfigürasyonu
     kafka_bootstrap_servers = "localhost:9092"
     kafka_topic = "car_topic"
 
-    # Define the schema for the data
+    # Veri için şema tanımlayın
     schema = StructType().add("Year", IntegerType()).add("Month", IntegerType()) \
         .add("Make", StringType()).add("Model", StringType()) \
         .add("Quantity", IntegerType()).add("Pct", FloatType())
 
-    # Read static data from a CSV file
+    # CSV dosyasından statik veriyi okuyun
     static_data_path = "KaggleDataset.csv"
     static_data = spark.read.csv(static_data_path, header=True, schema=schema)
 
-    # Read streaming data from Kafka
+    # Kafka'dan akış verisi okuyun
     raw_stream_df = (
         spark.readStream.format("kafka")
         .option("kafka.bootstrap.servers", kafka_bootstrap_servers)
@@ -60,25 +60,25 @@ def main():
         .load()
     )
 
-    # Cast the value column from Kafka as STRING
+    # Kafka değer sütununu STRING olarak dönüştürün
     json_stream_df = raw_stream_df.selectExpr("CAST(value AS STRING) as value")
 
-    # Parse the JSON data and select fields
+    # JSON verisini ayrıştırın ve alanları seçin
     parsed_stream_df = json_stream_df.select(from_json("value", schema).alias("data")).select("data.*")
 
-    # Add a "label" column to the streaming data
+    # Akış verisine "label" sütunu ekleyin
     labeled_stream_df = parsed_stream_df.withColumn("label", col("Quantity").cast(IntegerType()))
 
-    # Filter the streaming data based on a condition
+    # Akış verisini bir koşula göre filtreleyin
     processed_stream_df = labeled_stream_df.filter("Quantity > 50")
 
-    # Train or load the machine learning model
+    # Makine öğrenimi modelini eğitin veya yükleyin
     ml_model = train_ml_model(static_data)
 
-    # Use the machine learning model
+    # Makine öğrenimi modelini kullanın
     ml_result = ml_model.transform(processed_stream_df)
 
-    # Write the results to the console in append mode
+    # Sonuçları append modunda konsola yazın
     query = (
         ml_result.writeStream.outputMode("append")
         .format("console")
@@ -90,6 +90,6 @@ def main():
     except KeyboardInterrupt:
         query.stop()
 
-# Check whether the script is being run as the main program
+# Betik ana program olarak çalıştırılıyor mu kontrol edin
 if __name__ == "__main__":
     main()
