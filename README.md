@@ -23,7 +23,7 @@ This repository offers examples and a demonstration of real-time data processing
 
 1. Clone this repository:
 
-git clone https://github.com/your-username/real-time-data-processing.git
+git clone https://github.com/BllRaslen/real-time-data-processing
 
 
 2. Install dependencies:
